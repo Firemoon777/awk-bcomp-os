@@ -13,7 +13,7 @@ BEGIN {
 		CMA\n\
 		AND 011\n\
 		begin:\n\
-		BR 018\nBR 019") | "cat > bcomp-in";
+		BR 018\nNOP\nNOP\nNOP\nNOP\nCLF 3\nNOP\nHLT") | "cat > bcomp-in";
 	print("end") | "cat > bcomp-in";
 	print("Done");
 
@@ -23,11 +23,10 @@ BEGIN {
 	print("Done");
 
 	printf("Setup scheduler...");
-	context_count = 2;
-	contexts[0] = "0|018|0000|0";
-	contexts[1] = "1|019|BEEF|1";
+	context = 0;
+	contexts[0] = "018|0000|0";
 	split(contexts[0], current_context, "|");
-	time = 1;
+	time = 0;
 	time_per_proc = 15;
 	print("Done");
 	print("018 a") | "cat > bcomp-in";
@@ -38,28 +37,55 @@ BEGIN {
 } 
 
 /^bcomp.{2}[0-9]/ {
-	if (NR > ignore) {
-		print;
+	if (NR > ignore || $3 == "F000") {
+		killed = 0;
+		if($3 == "F000") {
+			for(i = context; i < length(contexts)-1; i++) {
+				contexts[i] = contexts[i+1];
+			}
+			delete contexts[length(contexts)-1];
+			killed = 1;
+			#print("Contexts size: "length(contexts));
+		}
+		#print;
+
 		time++;
-		if(time >= time_per_proc) {
+		if(time >= time_per_proc || killed == 1) {
 			time = 0;
-			print("Time to switch!");
+			#print("Time to switch!");
   			ignore = NR + 10;
-			# save current contect
-			contexts[current_context[1]] = current_context[1]"|"$4"|"$8"|"$9;
-			print("Saved: "contexts[current_context[1]]);
+			if(killed == 0) {
+				# save current contect
+				contexts[context] = $4"|"$8"|"$9;
+    				#print("Saved: "contexts[context]);
+			}
 			# switch to next context
-			next_c = (current_context[1] + 1) % context_count;
-			split(contexts[next_c], current_context, "|");
-			print("Enabled: "contexts[next_c]);
+			context = (context + 1) % length(contexts);
+			split(contexts[context], current_context, "|");
+			#print "context = "context;
+			#print("Enabled: "contexts[context]);
 			# Restore context
-			print ("010 a "current_context[4]" w "current_context[3]" w c c c c c c "current_context[2]" a") | "cat > bcomp-in";
-			print("Switch completed");
+			print ("010 a "current_context[3]" w "current_context[2]" w c c c c c c "current_context[1]" a") | "cat > bcomp-in";
+			#print("Switch completed");
 		}
 		print("c") | "cat > bcomp-in";
 	}
 }
 
 /^shell/ {
+	if($2 == "ls") {
+		print("flag 3") | "cat > bcomp-in";
+		contexts[length(contexts)] = "019|0000|0";
+		next;
+	}
 	print $2 | "cat > bcomp-in";
+}
+
+function chr(c)
+{
+	return sprintf("%c", c + 0)
+}
+
+/^ВУ3/ {
+	printf chr($8);
 }
