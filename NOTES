@@ -1,0 +1,66 @@
+Адр Знчн  СК  РА  РК   РД    А  С Адр Знчн
+000 0001 002 000 0000 0001 0000 0 000 0001
+
+in-memory filesystem:
+	start: 0x400
+	superblock: 0x400-0x4C8
+	data: 0x4C9-0x7FF
+filestructure:
+	<header><parent><size><name><data>
+	header -- TxxR, where
+		T = 0 for file, 1 for dir
+		R = unix-like rights
+	parent -- parent i-node
+	name -- null-terminated string
+	data -- 8 byte block with link to next block, for example
+		DATA
+		DATA
+		DATA
+		DATA
+		LINK
+		
+		if LINK = EOF, LINK = 0000
+
+
+Firmware:
+010: ROL A
+011: A
+set_context:
+012: CLA
+013: ADD 010
+014: ROR
+015: CLA
+016: CMA
+017: AND 011
+idle:
+018: BR 018
+...
+filesystem_start:
+400: 04C9 ; root
+401: 04D2 ; 1.txt
+...
+4C9: 1007 ; dir, rwx
+4CA: 0400 ; parent for root -- root
+4CB: 0002 ; 2 bytes data
+4CC: 2F00 ; name "/"
+4CD: 0401 ; link to file 1.txt
+4CE: 0000
+4CF: 0000
+4D0: 0000
+4D1: 0000 ; LINK
+4D2: 0006 ; file, rw-
+4D3: 0400 ; parent
+4D4: 000c ; 12 bytes
+4D5: 312E ; 1.
+4D6: 7478 ; tx
+4D7: 7400 ; t
+4D8: 6162 ; ab
+4D9: 6364 ; cd
+4DA: 6566 ; ef
+4DB: 6768 ; gh
+4DC: 04DC ; LINK
+4DD: 696A ; ij
+4DE: 6B6C ; kl
+4DF: 0000
+4E0: 0000
+4E1: 0000 ; LINK
