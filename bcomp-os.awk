@@ -28,6 +28,7 @@ BEGIN {
 	split(contexts[0], current_context, "|");
 	time = 0;
 	time_per_proc = 15;
+	print("flag 3") | "cat > bcomp-in";
 	print("Done");
 	print("018 a") | "cat > bcomp-in";
 	print("c") | "cat > bcomp-in";
@@ -87,5 +88,8 @@ function chr(c)
 }
 
 /^ВУ3/ {
-	printf chr($8);
+	if($4 == 0) {
+		printf chr($8);
+		print("flag 3") | "cat > bcomp-in";
+	}
 }
